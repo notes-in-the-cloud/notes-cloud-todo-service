@@ -21,7 +21,7 @@ jobs:
         run: |
           docker build \
             -t ${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            -t ${{ env.IMAGE_NAME }}:latest \
+            -t ${{ env.IMAGE_NAME }}:v1 \
             .
 
       - name: Log in to Docker Hub
