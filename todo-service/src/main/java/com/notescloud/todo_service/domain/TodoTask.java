@@ -1,49 +1,91 @@
 package com.notescloud.todo_service.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Table(name = "todo_tasks", schema = "todo")
 public class TodoTask {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    private UUID todoListId;
+    private UUID listId;
 
+    @Column(nullable = false)
     private UUID userId;
 
+    @Column(nullable = false)
     private String title;
 
-    private boolean completed;
+    @Column(nullable = false)
+    private boolean done;
 
-    public TodoTask() {
-        id = UUID.randomUUID();
-        todoListId = UUID.randomUUID();
-        userId = UUID.randomUUID();
-        title = "New Task";
-        completed = false;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TodoPriority priority;
+
+    private LocalDateTime dueDate;
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+
+    protected TodoTask() {
     }
 
-    public TodoTask(UUID todoListId, UUID userId, String title, boolean completed) {
-        this.id = UUID.randomUUID();
-        this.todoListId = todoListId;
+    public TodoTask(
+        UUID listId,
+        UUID userId,
+        String title,
+        TodoPriority priority,
+        LocalDateTime dueDate
+    ) {
+        this.listId = listId;
         this.userId = userId;
         this.title = title;
-        this.completed = completed;
+        this.done = false;
+        this.priority = priority == null ? TodoPriority.MEDIUM : priority;
+        this.dueDate = dueDate;
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void update(
+        String title,
+        TodoPriority priority,
+        LocalDateTime dueDate
+    ) {
+        if (title != null) {
+            this.title = title;
+        }
+
+        if (priority != null) {
+            this.priority = priority;
+        }
+
+        if (dueDate != null) {
+            this.dueDate = dueDate;
+        }
+
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void markDone() {
+        this.done = true;
+        this.updatedAt = LocalDateTime.now();
     }
 
     public UUID id() {
         return id;
     }
 
-    public UUID todoListId() {
-        return todoListId;
+    public UUID listId() {
+        return listId;
     }
 
     public UUID userId() {
@@ -54,11 +96,23 @@ public class TodoTask {
         return title;
     }
 
-    public boolean completed() {
-        return completed;
+    public boolean done() {
+        return done;
     }
 
-    public void markAsComplete() {
-        completed = true;
+    public TodoPriority priority() {
+        return priority;
+    }
+
+    public LocalDateTime dueDate() {
+        return dueDate;
+    }
+
+    public LocalDateTime createdAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime updatedAt() {
+        return updatedAt;
     }
 }

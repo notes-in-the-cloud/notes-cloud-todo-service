@@ -1,37 +1,42 @@
 package com.notescloud.todo_service.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Table(name = "todo_lists", schema = "todo")
 public class TodoList {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(nullable = false)
     private UUID userId;
 
+    @Column(nullable = false)
     private String title;
 
-    private Instant createdAt;
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
 
-    public TodoList(UUID userId, String title) {
-        this.id = UUID.randomUUID();
-        this.userId = userId;
-        this.title = title;
-        this.createdAt = Instant.now();
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+
+    protected TodoList() {
     }
 
-    public TodoList() {
-        this.id = UUID.randomUUID();
-        this.userId = UUID.randomUUID();
-        this.title = "New List";
-        this.createdAt = Instant.now();
+    public TodoList(UUID userId, String title) {
+        this.userId = userId;
+        this.title = title;
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void updateTitle(String title) {
+        this.title = title;
+        this.updatedAt = LocalDateTime.now();
     }
 
     public UUID id() {
@@ -46,7 +51,11 @@ public class TodoList {
         return title;
     }
 
-    public Instant createdAt() {
+    public LocalDateTime createdAt() {
         return createdAt;
+    }
+
+    public LocalDateTime updatedAt() {
+        return updatedAt;
     }
 }
