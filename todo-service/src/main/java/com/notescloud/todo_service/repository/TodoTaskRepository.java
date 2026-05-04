@@ -9,18 +9,15 @@ import java.util.List;
 import java.util.UUID;
 
 public interface TodoTaskRepository extends JpaRepository<TodoTask, UUID> {
-    List<TodoTask> findAllByListId(UUID listId);
+    List<TodoTask> findAllByListIdAndDoneFalse(UUID listId);
 
-    List<TodoTask> findAllByUserId(UUID userId);
+    List<TodoTask> findAllByUserIdAndDoneFalseAndListIdNotNull(UUID userId);
 
-    List<TodoTask> findAllByUserIdAndDone(UUID userId, boolean done);
+    List<TodoTask> findAllById(UUID id);
 
-    List<TodoTask> findAllByUserIdAndPriority(UUID userId, TodoPriority priority);
-
-    List<TodoTask> findAllByUserIdAndDueDateBeforeAndDoneFalse(
-        UUID userId,
-        LocalDateTime dateTime
-    );
+    List<TodoTask> findAllByUserIdAndDoneFalseAndListIdIsNull(UUID userId);
 
     void deleteAllByListId(UUID listId);
+
+    boolean existsByUserId(UUID userId);
 }

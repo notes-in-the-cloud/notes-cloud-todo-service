@@ -4,8 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record UpdateTodoListRequest(
-    @NotBlank
-    @Size(max = 255)
+    @NotBlank(message = "Title is required")
+    @Size(max = 255, message = "Title must be at most 255 characters")
     String title
 ) {
 }

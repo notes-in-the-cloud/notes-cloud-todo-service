@@ -7,11 +7,11 @@ import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 public record CreateTodoListRequest(
-    @NotNull
+    @NotNull(message = "User id is required")
     UUID userId,
 
-    @NotBlank
-    @Size(max = 255)
+    @NotBlank(message = "Title is required")
+    @Size(max = 255, message = "Title must be at most 255 characters")
     String title
 ) {
 }

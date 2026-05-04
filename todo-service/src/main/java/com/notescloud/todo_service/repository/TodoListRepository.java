@@ -9,4 +9,9 @@ import java.util.UUID;
 public interface TodoListRepository extends JpaRepository<TodoList, UUID> {
     List<TodoList> findAllByUserId(UUID userId);
 
-    void deleteAllById(UUID listId);}
+    TodoList getTodoListById(UUID id);
+
+    boolean existsByUserId(UUID userId);
+
+    List<TodoList> findAllById(UUID id);
+}
