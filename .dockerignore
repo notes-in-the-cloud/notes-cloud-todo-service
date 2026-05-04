@@ -7,3 +7,8 @@ target
 .DS_Store
 .env
 *.log
+.DS_Store
+todo-service/target
+.git
+.idea
+*.iml
