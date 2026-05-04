@@ -1,15 +1,9 @@
 package com.notescloud.todo_service.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.util.UUID;
-
-public record CreateTodoListRequest(
-    @NotNull
-    UUID userId,
-
+public record UpdateTodoListRequest(
     @NotBlank
     @Size(max = 255)
     String title
