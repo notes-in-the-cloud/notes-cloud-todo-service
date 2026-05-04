@@ -1,18 +1,19 @@
 # ---------- Build stage ----------
-FROM maven:3.9.9-eclipse-temurin-21 AS build
+FROM --platform=$BUILDPLATFORM maven:3.9.9-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
+# Copy pom first for better Docker layer caching
 COPY todo-service/pom.xml .
-COPY todo-service/.mvn .mvn
-COPY todo-service/mvnw .
 
-RUN chmod +x mvnw
-RUN ./mvnw dependency:go-offline -B
+# Download dependencies
+RUN mvn dependency:go-offline -B
 
+# Copy source code
 COPY todo-service/src src
 
-RUN ./mvnw clean package -DskipTests
+# Build jar
+RUN mvn clean package -DskipTests
 
 # ---------- Runtime stage ----------
 FROM eclipse-temurin:21-jre
