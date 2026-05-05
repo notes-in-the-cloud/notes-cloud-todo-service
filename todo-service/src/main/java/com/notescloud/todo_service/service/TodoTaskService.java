@@ -78,9 +78,6 @@ public class TodoTaskService {
     }
 
     public List<TodoTaskResponse> getStandaloneTasks(UUID userId) {
-        if (!todoTaskRepository.existsByUserId(userId)) {
-            throw new ResourceNotFoundException("Tasks not found.");
-        }
         LocalDateTime now = LocalDateTime.now();
         return todoTaskRepository.findAllByUserIdAndDoneFalseAndListIdIsNull(userId).stream()
             .filter(task -> task.dueDate() == null || !task.dueDate().isBefore(now))

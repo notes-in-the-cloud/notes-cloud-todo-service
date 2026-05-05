@@ -10,8 +10,4 @@ public interface TodoListRepository extends JpaRepository<TodoList, UUID> {
     List<TodoList> findAllByUserId(UUID userId);
 
     TodoList getTodoListById(UUID id);
-
-    boolean existsByUserId(UUID userId);
-
-    List<TodoList> findAllById(UUID id);
 }
