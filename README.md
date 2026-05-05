@@ -8,12 +8,12 @@ The service supports:
 - Creating, updating, deleting and reading todo tasks
 - Standalone tasks that do not belong to a list
 - Tasks attached to a todo list
-- Marking tasks as done
+- Marking tasks as completed
 - Returning todo lists together with their active tasks
 - Returning standalone active tasks
 - PostgreSQL persistence
 - Kubernetes deployment support
-- Health and readiness checks through Spring Boot Actuator
+- Health checks through Spring Boot Actuator
 
 ## Tech Stack
 
@@ -50,7 +50,7 @@ todo-service/
 
 ## Environment Variables
 
-The service expects the following environment variables when running in Kubernetes:
+When running inside Kubernetes, the service expects these environment variables:
 
 ```text
 SERVER_PORT=8085
@@ -62,7 +62,7 @@ POSTGRES_PASSWORD=notes_cloud_password
 SPRING_JPA_HIBERNATE_DDL_AUTO=validate
 ```
 
-For local development through port-forwarding:
+For local development through database port-forwarding:
 
 ```text
 DB_HOST=localhost
@@ -106,7 +106,7 @@ Then the service can connect locally to:
 localhost:15432
 ```
 
-You need to keep the port-forward terminal running while accessing the database locally.
+The port-forward command must stay running while the local application or IntelliJ database tool is accessing PostgreSQL.
 
 ## Health Checks
 
@@ -146,9 +146,7 @@ Example:
 curl http://localhost:8085/actuator/health/readiness
 ```
 
-## API Endpoints
-
-Base URL:
+## API Base URL
 
 ```text
 http://localhost:8085
@@ -159,7 +157,7 @@ http://localhost:8085
 ### Create todo list
 
 ```http
-POST /api/todo-lists
+POST /api/todo-lists/create
 ```
 
 Request body:
@@ -169,6 +167,17 @@ Request body:
   "userId": "8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f",
   "title": "Web Project Tasks"
 }
+```
+
+Example curl:
+
+```bash
+curl -X POST http://localhost:8085/api/todo-lists/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f",
+    "title": "Web Project Tasks"
+  }'
 ```
 
 Example response:
@@ -183,19 +192,9 @@ Example response:
 }
 ```
 
-### Get all todo lists for a user
-
-```http
-GET /api/todo-lists?userId={userId}
-```
-
-Example:
-
-```bash
-curl "http://localhost:8085/api/todo-lists?userId=8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f"
-```
-
 ### Get todo list by id
+
+Returns a single todo list together with its tasks.
 
 ```http
 GET /api/todo-lists/{id}
@@ -207,16 +206,40 @@ Example:
 curl http://localhost:8085/api/todo-lists/b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33
 ```
 
-### Get todo lists with their tasks
+Example response:
+
+```json
+{
+  "id": "b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33",
+  "title": "Web Project Tasks",
+  "createdAt": "2026-05-04T11:35:00",
+  "updatedAt": "2026-05-04T11:35:00",
+  "tasks": [
+    {
+      "id": "38d3719a-8b97-4460-9ee9-e96c6112d5a5",
+      "listId": "b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33",
+      "userId": "8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f",
+      "title": "Test todo-service endpoints",
+      "done": false,
+      "priority": "HIGH",
+      "dueDate": "2026-05-08T18:00:00",
+      "createdAt": "2026-05-04T11:40:00",
+      "updatedAt": "2026-05-04T11:40:00"
+    }
+  ]
+}
+```
+
+### Get all todo lists with tasks for a user
 
 ```http
-GET /api/todo-lists/with-tasks?userId={userId}
+GET /api/todo-lists/all?userId={userId}
 ```
 
 Example:
 
 ```bash
-curl "http://localhost:8085/api/todo-lists/with-tasks?userId=8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f"
+curl "http://localhost:8085/api/todo-lists/all?userId=8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f"
 ```
 
 Example response:
@@ -264,7 +287,9 @@ Example:
 ```bash
 curl -X PUT http://localhost:8085/api/todo-lists/b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33 \
   -H "Content-Type: application/json" \
-  -d '{"title":"Updated Web Project Tasks"}'
+  -d '{
+    "title": "Updated Web Project Tasks"
+  }'
 ```
 
 ### Delete todo list
@@ -292,7 +317,7 @@ Expected response:
 Standalone tasks do not have a `listId`.
 
 ```http
-POST /api/todo-tasks
+POST /api/todo-tasks/create
 ```
 
 Request body:
@@ -304,6 +329,19 @@ Request body:
   "priority": "HIGH",
   "dueDate": "2026-05-08T18:00:00"
 }
+```
+
+Example curl:
+
+```bash
+curl -X POST http://localhost:8085/api/todo-tasks/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f",
+    "title": "Finish todo-service CRUD",
+    "priority": "HIGH",
+    "dueDate": "2026-05-08T18:00:00"
+  }'
 ```
 
 Example response:
@@ -325,7 +363,7 @@ Example response:
 ### Create todo task attached to a list
 
 ```http
-POST /api/todo-tasks
+POST /api/todo-tasks/create
 ```
 
 Request body:
@@ -340,6 +378,20 @@ Request body:
 }
 ```
 
+Example curl:
+
+```bash
+curl -X POST http://localhost:8085/api/todo-tasks/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "listId": "b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33",
+    "userId": "8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f",
+    "title": "Prepare final project demo",
+    "priority": "MEDIUM",
+    "dueDate": "2026-05-10T12:00:00"
+  }'
+```
+
 ### Get todo task by id
 
 ```http
@@ -352,15 +404,9 @@ Example:
 curl http://localhost:8085/api/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5
 ```
 
-### Get all todo tasks for a user
+### Get all standalone todo tasks for a user
 
-Recommended endpoint:
-
-```http
-GET /api/todo-tasks?userId={userId}
-```
-
-Alternative endpoint if the controller uses `/all`:
+This endpoint currently calls `getStandaloneTasks(userId)`, so it returns standalone tasks for the user. Standalone tasks are tasks where `listId` is `null`.
 
 ```http
 GET /api/todo-tasks/all?userId={userId}
@@ -369,33 +415,25 @@ GET /api/todo-tasks/all?userId={userId}
 Example:
 
 ```bash
-curl "http://localhost:8085/api/todo-tasks?userId=8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f"
+curl "http://localhost:8085/api/todo-tasks/all?userId=8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f"
 ```
 
-### Get standalone todo tasks
+Example response:
 
-Returns tasks where `listId` is `null`.
-
-```http
-GET /api/todo-tasks/standalone?userId={userId}
-```
-
-Example:
-
-```bash
-curl "http://localhost:8085/api/todo-tasks/standalone?userId=8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f"
-```
-
-### Get tasks by list id
-
-```http
-GET /api/todo-tasks/list/{listId}
-```
-
-Example:
-
-```bash
-curl http://localhost:8085/api/todo-tasks/list/b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33
+```json
+[
+  {
+    "id": "38d3719a-8b97-4460-9ee9-e96c6112d5a5",
+    "listId": null,
+    "userId": "8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f",
+    "title": "Finish todo-service CRUD",
+    "done": false,
+    "priority": "HIGH",
+    "dueDate": "2026-05-08T18:00:00",
+    "createdAt": "2026-05-04T12:00:00",
+    "updatedAt": "2026-05-04T12:00:00"
+  }
+]
 ```
 
 ### Update todo task
@@ -426,29 +464,19 @@ curl -X PUT http://localhost:8085/api/todo-tasks/38d3719a-8b97-4460-9ee9-e96c611
   }'
 ```
 
-### Mark task as done
+### Mark task as completed
 
 ```http
-PUT /api/todo-tasks/{id}/done
+PUT /api/todo-tasks/{id}/complete
 ```
 
 Example:
 
 ```bash
-curl -X PUT http://localhost:8085/api/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5/done
+curl -X PUT http://localhost:8085/api/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5/complete
 ```
 
-### Reopen task
-
-```http
-PUT /api/todo-tasks/{id}/reopen
-```
-
-Example:
-
-```bash
-curl -X PUT http://localhost:8085/api/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5/reopen
-```
+This endpoint does not return a response body.
 
 ### Delete todo task
 
@@ -657,8 +685,9 @@ Password: notes_cloud_password
 
 - A todo task can be standalone or attached to a todo list.
 - A standalone task has `listId = null`.
+- The current `GET /api/todo-tasks/all` endpoint returns standalone tasks for a user.
 - A completed task is not deleted automatically.
-- Marking a task as done sets `done = true`.
+- Marking a task as completed sets `done = true`.
 - Deleting a task removes it from the database.
 - Deleting a todo list should not delete standalone tasks.
 - If a todo list is deleted, attached tasks should either be detached or handled through the database foreign key rule.
