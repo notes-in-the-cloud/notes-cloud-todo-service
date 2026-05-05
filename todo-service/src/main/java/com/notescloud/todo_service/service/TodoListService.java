@@ -37,8 +37,8 @@ public class TodoListService {
         if (!todoListRepository.existsById(id)) {
             throw new ResourceNotFoundException("Todo list not found with id: " + id);
         }
+        todoTaskRepository.detachAllByListId(id);
         todoListRepository.deleteById(id);
-        todoTaskRepository.deleteAllByListId(id);
     }
 
     public TodoListResponse updateTodoList(UUID id, UpdateTodoListRequest request) {
@@ -50,18 +50,13 @@ public class TodoListService {
     }
 
     public TodoListWithTasksResponse getTodoList(UUID id) {
-        if (!todoListRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Todo list not found with id: " + id);
-        }
-        TodoList list = todoListRepository.getTodoListById(id);
+        TodoList list = todoListRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Todo list not found with id: " + id));
         List<TodoTask> tasks = todoTaskRepository.findAllByListIdAndDoneFalse(list.id());
         return TodoListWithTasksResponse.from(list, tasks);
     }
 
     public List<TodoListWithTasksResponse> getTodoListsWithTasks(UUID userId) {
-        if (!todoListRepository.existsByUserId(userId)) {
-            throw new ResourceNotFoundException("Todo list not found with user id: " + userId);
-        }
         List<TodoList> lists = todoListRepository.findAllByUserId(userId);
         List<TodoTask> tasks = todoTaskRepository.findAllByUserIdAndDoneFalseAndListIdNotNull(userId);
         return lists.stream()
