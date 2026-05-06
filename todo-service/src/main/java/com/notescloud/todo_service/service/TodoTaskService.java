@@ -24,14 +24,14 @@ public class TodoTaskService {
         this.todoListRepository = todoListRepository;
     }
 
-    public TodoTaskResponse createTodoTask(CreateTodoTaskRequest request) {
+    public TodoTaskResponse createTodoTask(UUID userId, CreateTodoTaskRequest request) {
         if (request.listId() != null && !todoListRepository.existsById(request.listId())) {
             throw new ResourceNotFoundException("Todo list not found with id: " + request.listId());
         }
 
         TodoTask task = new TodoTask(
             request.listId(),
-            request.userId(),
+            userId,
             request.title(),
             request.priority(),
             request.dueDate()
@@ -42,46 +42,47 @@ public class TodoTaskService {
         return TodoTaskResponse.from(savedTask);
     }
 
-    public void deleteTodoTask(UUID id) {
-        if (!todoTaskRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Todo task not found with id: " + id);
-        }
-        todoTaskRepository.deleteById(id);
+    public void deleteTodoTask(UUID userId, UUID taskId) {
+        TodoTask task = getTaskForUser(userId, taskId);
+        todoTaskRepository.delete(task);
     }
 
-    public TodoTaskResponse updateTodoTask(UUID id, UpdateTodoTaskRequest request) {
-        TodoTask task = todoTaskRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Todo task not found with id: " + id));
+    public TodoTaskResponse updateTodoTask(UUID userId, UUID taskId, UpdateTodoTaskRequest request) {
+        TodoTask task = getTaskForUser(userId, taskId);
 
         task.update(
             request.title(),
             request.priority(),
             request.dueDate()
         );
+
         TodoTask savedTask = todoTaskRepository.save(task);
 
         return TodoTaskResponse.from(savedTask);
     }
 
-    public void markDone(UUID id) {
-        TodoTask todoTask = todoTaskRepository.findById(id).orElseThrow(
-            () -> new ResourceNotFoundException("Task with id: " + id + " not found")
-        );
-        todoTask.markDone();
-        todoTaskRepository.save(todoTask);
+    public void markDone(UUID userId, UUID taskId) {
+        TodoTask task = getTaskForUser(userId, taskId);
+        task.markDone();
+        todoTaskRepository.save(task);
     }
 
-    public TodoTaskResponse getTodoTask(UUID id) {
-        return TodoTaskResponse.from(todoTaskRepository.findById(id).orElseThrow(
-            () -> new ResourceNotFoundException("Task with id: " + id + " not found")
-        ));
+    public TodoTaskResponse getTodoTask(UUID userId, UUID taskId) {
+        return TodoTaskResponse.from(getTaskForUser(userId, taskId));
     }
 
     public List<TodoTaskResponse> getStandaloneTasks(UUID userId) {
         LocalDateTime now = LocalDateTime.now();
-        return todoTaskRepository.findAllByUserIdAndDoneFalseAndListIdIsNull(userId).stream()
+
+        return todoTaskRepository.findAllByUserIdAndDoneFalseAndListIdIsNull(userId)
+            .stream()
             .filter(task -> task.dueDate() == null || !task.dueDate().isBefore(now))
             .map(TodoTaskResponse::from)
             .toList();
+    }
+
+    private TodoTask getTaskForUser(UUID userId, UUID taskId) {
+        return todoTaskRepository.findByIdAndUserId(taskId, userId)
+            .orElseThrow(() -> new ResourceNotFoundException("Todo task not found with id: " + taskId));
     }
 }
