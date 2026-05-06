@@ -27,27 +27,6 @@ The service supports:
 - Kubernetes
 - Maven
 
-## Project Structure
-
-```text
-todo-service/
-├── src/
-│   ├── main/
-│   │   ├── java/com/notescloud/todo_service/
-│   │   │   ├── controller/
-│   │   │   ├── domain/
-│   │   │   ├── dto/
-│   │   │   ├── exception/
-│   │   │   ├── repository/
-│   │   │   ├── service/
-│   │   │   └── TodoServiceApplication.java
-│   │   └── resources/
-│   │       └── application.properties
-│   └── test/
-├── pom.xml
-└── Dockerfile
-```
-
 ## Environment Variables
 
 When running inside Kubernetes, the service expects these environment variables:
@@ -100,12 +79,6 @@ If PostgreSQL is running inside the Kubernetes cluster, expose it locally with:
 kubectl port-forward svc/postgres 15432:5432 -n notes-cloud
 ```
 
-Then the service can connect locally to:
-
-```text
-localhost:15432
-```
-
 The port-forward command must stay running while the local application or IntelliJ database tool is accessing PostgreSQL.
 
 ## Health Checks
@@ -115,8 +88,6 @@ The port-forward command must stay running while the local application or Intell
 ```http
 GET /actuator/health
 ```
-
-Example:
 
 ```bash
 curl http://localhost:8085/actuator/health
@@ -128,8 +99,6 @@ curl http://localhost:8085/actuator/health
 GET /actuator/health/liveness
 ```
 
-Example:
-
 ```bash
 curl http://localhost:8085/actuator/health/liveness
 ```
@@ -139,8 +108,6 @@ curl http://localhost:8085/actuator/health/liveness
 ```http
 GET /actuator/health/readiness
 ```
-
-Example:
 
 ```bash
 curl http://localhost:8085/actuator/health/readiness
@@ -152,30 +119,45 @@ curl http://localhost:8085/actuator/health/readiness
 http://localhost:8085
 ```
 
+## Endpoint Style
+
+The current controller endpoints use `userId` in the path.
+
+```text
+/api/users/{userId}/todo-lists
+/api/users/{userId}/todo-tasks
+```
+
+The `userId` is not sent in the request body.
+
+Example user id used in the examples:
+
+```text
+8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f
+```
+
 ## Todo List Endpoints
 
 ### Create todo list
 
 ```http
-POST /api/todo-lists/create
+POST /api/users/{userId}/todo-lists
 ```
 
 Request body:
 
 ```json
 {
-  "userId": "8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f",
   "title": "Web Project Tasks"
 }
 ```
 
-Example curl:
+Example:
 
 ```bash
-curl -X POST http://localhost:8085/api/todo-lists/create \
+curl -X POST http://localhost:8085/api/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-lists \
   -H "Content-Type: application/json" \
   -d '{
-    "userId": "8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f",
     "title": "Web Project Tasks"
   }'
 ```
@@ -192,54 +174,22 @@ Example response:
 }
 ```
 
-### Get todo list by id
+Expected status:
 
-Returns a single todo list together with its tasks.
-
-```http
-GET /api/todo-lists/{id}
-```
-
-Example:
-
-```bash
-curl http://localhost:8085/api/todo-lists/b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33
-```
-
-Example response:
-
-```json
-{
-  "id": "b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33",
-  "title": "Web Project Tasks",
-  "createdAt": "2026-05-04T11:35:00",
-  "updatedAt": "2026-05-04T11:35:00",
-  "tasks": [
-    {
-      "id": "38d3719a-8b97-4460-9ee9-e96c6112d5a5",
-      "listId": "b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33",
-      "userId": "8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f",
-      "title": "Test todo-service endpoints",
-      "done": false,
-      "priority": "HIGH",
-      "dueDate": "2026-05-08T18:00:00",
-      "createdAt": "2026-05-04T11:40:00",
-      "updatedAt": "2026-05-04T11:40:00"
-    }
-  ]
-}
+```text
+201 Created
 ```
 
 ### Get all todo lists with tasks for a user
 
 ```http
-GET /api/todo-lists/all?userId={userId}
+GET /api/users/{userId}/todo-lists
 ```
 
 Example:
 
 ```bash
-curl "http://localhost:8085/api/todo-lists/all?userId=8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f"
+curl http://localhost:8085/api/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-lists
 ```
 
 Example response:
@@ -268,10 +218,22 @@ Example response:
 ]
 ```
 
+### Get todo list by id
+
+```http
+GET /api/users/{userId}/todo-lists/{listId}
+```
+
+Example:
+
+```bash
+curl http://localhost:8085/api/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-lists/b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33
+```
+
 ### Update todo list
 
 ```http
-PUT /api/todo-lists/{id}
+PUT /api/users/{userId}/todo-lists/{listId}
 ```
 
 Request body:
@@ -285,7 +247,7 @@ Request body:
 Example:
 
 ```bash
-curl -X PUT http://localhost:8085/api/todo-lists/b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33 \
+curl -X PUT http://localhost:8085/api/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-lists/b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33 \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Updated Web Project Tasks"
@@ -295,13 +257,13 @@ curl -X PUT http://localhost:8085/api/todo-lists/b74f4f78-2eb5-4ef4-9c35-7e08c21
 ### Delete todo list
 
 ```http
-DELETE /api/todo-lists/{id}
+DELETE /api/users/{userId}/todo-lists/{listId}
 ```
 
 Example:
 
 ```bash
-curl -X DELETE http://localhost:8085/api/todo-lists/b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33
+curl -X DELETE http://localhost:8085/api/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-lists/b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33
 ```
 
 Expected response:
@@ -310,6 +272,8 @@ Expected response:
 204 No Content
 ```
 
+When a todo list is deleted, the service detaches its tasks by setting their `listId` to `null`, so they become standalone tasks instead of being deleted.
+
 ## Todo Task Endpoints
 
 ### Create standalone todo task
@@ -317,27 +281,25 @@ Expected response:
 Standalone tasks do not have a `listId`.
 
 ```http
-POST /api/todo-tasks/create
+POST /api/users/{userId}/todo-tasks
 ```
 
 Request body:
 
 ```json
 {
-  "userId": "8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f",
   "title": "Finish todo-service CRUD",
   "priority": "HIGH",
   "dueDate": "2026-05-08T18:00:00"
 }
 ```
 
-Example curl:
+Example:
 
 ```bash
-curl -X POST http://localhost:8085/api/todo-tasks/create \
+curl -X POST http://localhost:8085/api/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks \
   -H "Content-Type: application/json" \
   -d '{
-    "userId": "8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f",
     "title": "Finish todo-service CRUD",
     "priority": "HIGH",
     "dueDate": "2026-05-08T18:00:00"
@@ -360,10 +322,16 @@ Example response:
 }
 ```
 
+Expected status:
+
+```text
+201 Created
+```
+
 ### Create todo task attached to a list
 
 ```http
-POST /api/todo-tasks/create
+POST /api/users/{userId}/todo-tasks
 ```
 
 Request body:
@@ -371,51 +339,37 @@ Request body:
 ```json
 {
   "listId": "b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33",
-  "userId": "8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f",
   "title": "Prepare final project demo",
   "priority": "MEDIUM",
   "dueDate": "2026-05-10T12:00:00"
 }
 ```
 
-Example curl:
+Example:
 
 ```bash
-curl -X POST http://localhost:8085/api/todo-tasks/create \
+curl -X POST http://localhost:8085/api/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks \
   -H "Content-Type: application/json" \
   -d '{
     "listId": "b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33",
-    "userId": "8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f",
     "title": "Prepare final project demo",
     "priority": "MEDIUM",
     "dueDate": "2026-05-10T12:00:00"
   }'
 ```
 
-### Get todo task by id
+### Get standalone todo tasks for a user
+
+Returns active standalone tasks for the user. Standalone tasks are tasks where `listId` is `null`.
 
 ```http
-GET /api/todo-tasks/{id}
+GET /api/users/{userId}/todo-tasks
 ```
 
 Example:
 
 ```bash
-curl http://localhost:8085/api/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5
-```
-
-### Get all standalone todo tasks for a user
-
-This endpoint currently calls `getStandaloneTasks(userId)`, so it returns standalone tasks for the user. Standalone tasks are tasks where `listId` is `null`.
-
-```http
-GET /api/todo-tasks/all?userId={userId}
-```
-
-Example:
-
-```bash
-curl "http://localhost:8085/api/todo-tasks/all?userId=8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f"
+curl http://localhost:8085/api/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks
 ```
 
 Example response:
@@ -436,10 +390,22 @@ Example response:
 ]
 ```
 
+### Get todo task by id
+
+```http
+GET /api/users/{userId}/todo-tasks/{taskId}
+```
+
+Example:
+
+```bash
+curl http://localhost:8085/api/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5
+```
+
 ### Update todo task
 
 ```http
-PUT /api/todo-tasks/{id}
+PUT /api/users/{userId}/todo-tasks/{taskId}
 ```
 
 Request body:
@@ -455,7 +421,7 @@ Request body:
 Example:
 
 ```bash
-curl -X PUT http://localhost:8085/api/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5 \
+curl -X PUT http://localhost:8085/api/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5 \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Updated task name",
@@ -467,27 +433,31 @@ curl -X PUT http://localhost:8085/api/todo-tasks/38d3719a-8b97-4460-9ee9-e96c611
 ### Mark task as completed
 
 ```http
-PUT /api/todo-tasks/{id}/complete
+PUT /api/users/{userId}/todo-tasks/{taskId}/complete
 ```
 
 Example:
 
 ```bash
-curl -X PUT http://localhost:8085/api/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5/complete
+curl -X PUT http://localhost:8085/api/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5/complete
 ```
 
-This endpoint does not return a response body.
+Expected response:
+
+```text
+204 No Content
+```
 
 ### Delete todo task
 
 ```http
-DELETE /api/todo-tasks/{id}
+DELETE /api/users/{userId}/todo-tasks/{taskId}
 ```
 
 Example:
 
 ```bash
-curl -X DELETE http://localhost:8085/api/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5
+curl -X DELETE http://localhost:8085/api/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5
 ```
 
 Expected response:
@@ -502,7 +472,6 @@ Expected response:
 
 ```json
 {
-  "userId": "UUID",
   "title": "string"
 }
 ```
@@ -520,7 +489,6 @@ Expected response:
 ```json
 {
   "listId": "UUID or null",
-  "userId": "UUID",
   "title": "string",
   "priority": "LOW | MEDIUM | HIGH",
   "dueDate": "yyyy-MM-ddTHH:mm:ss"
@@ -685,9 +653,9 @@ Password: notes_cloud_password
 
 - A todo task can be standalone or attached to a todo list.
 - A standalone task has `listId = null`.
-- The current `GET /api/todo-tasks/all` endpoint returns standalone tasks for a user.
+- `GET /api/users/{userId}/todo-tasks` returns standalone active tasks for the user.
+- `GET /api/users/{userId}/todo-lists` returns todo lists with their active attached tasks.
 - A completed task is not deleted automatically.
 - Marking a task as completed sets `done = true`.
 - Deleting a task removes it from the database.
-- Deleting a todo list should not delete standalone tasks.
-- If a todo list is deleted, attached tasks should either be detached or handled through the database foreign key rule.
+- Deleting a todo list detaches its tasks and makes them standalone.
