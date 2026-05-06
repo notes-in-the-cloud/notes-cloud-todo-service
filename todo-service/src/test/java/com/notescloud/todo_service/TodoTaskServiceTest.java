@@ -133,7 +133,8 @@ class TodoTaskServiceTest {
         UpdateTodoTaskRequest request = new UpdateTodoTaskRequest(
             "New title",
             TodoPriority.HIGH,
-            null
+            null,
+            false
         );
 
         when(todoTaskRepository.findByIdAndUserId(taskId, userId))
@@ -156,50 +157,14 @@ class TodoTaskServiceTest {
         UpdateTodoTaskRequest request = new UpdateTodoTaskRequest(
             "New title",
             TodoPriority.HIGH,
-            LocalDateTime.now().plusDays(1)
+            LocalDateTime.now().plusDays(1),
+            false
         );
 
         when(todoTaskRepository.findByIdAndUserId(taskId, userId))
             .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> todoTaskService.updateTodoTask(userId, taskId, request))
-            .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessageContaining("Todo task not found with id");
-
-        verify(todoTaskRepository, never()).save(any());
-    }
-
-    @Test
-    void markDone_marksTaskAsDoneWhenItBelongsToUser() {
-        UUID userId = UUID.randomUUID();
-        UUID taskId = UUID.randomUUID();
-
-        TodoTask task = new TodoTask(
-            null,
-            userId,
-            "Task",
-            TodoPriority.MEDIUM,
-            LocalDateTime.now().plusDays(1)
-        );
-
-        when(todoTaskRepository.findByIdAndUserId(taskId, userId))
-            .thenReturn(Optional.of(task));
-
-        todoTaskService.markDone(userId, taskId);
-
-        assertThat(task.done()).isTrue();
-        verify(todoTaskRepository).save(task);
-    }
-
-    @Test
-    void markDone_whenTaskDoesNotBelongToUser_throwsNotFound() {
-        UUID userId = UUID.randomUUID();
-        UUID taskId = UUID.randomUUID();
-
-        when(todoTaskRepository.findByIdAndUserId(taskId, userId))
-            .thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> todoTaskService.markDone(userId, taskId))
             .isInstanceOf(ResourceNotFoundException.class)
             .hasMessageContaining("Todo task not found with id");
 

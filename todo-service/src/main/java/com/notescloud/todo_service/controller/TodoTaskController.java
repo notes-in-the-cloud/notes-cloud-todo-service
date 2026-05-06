@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/users/{userId}/todo-tasks")
+@RequestMapping("/api/v1/users/{userId}/todo-tasks")
 public class TodoTaskController {
 
     private final TodoTaskService todoTaskService;
@@ -52,15 +52,6 @@ public class TodoTaskController {
         @Valid @RequestBody UpdateTodoTaskRequest request
     ) {
         return todoTaskService.updateTodoTask(userId, taskId, request);
-    }
-
-    @PutMapping("/{taskId}/complete")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void markDone(
-        @PathVariable UUID userId,
-        @PathVariable UUID taskId
-    ) {
-        todoTaskService.markDone(userId, taskId);
     }
 
     @DeleteMapping("/{taskId}")

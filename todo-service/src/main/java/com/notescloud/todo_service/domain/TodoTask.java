@@ -58,7 +58,8 @@ public class TodoTask {
     public void update(
         String title,
         TodoPriority priority,
-        LocalDateTime dueDate
+        LocalDateTime dueDate,
+        Boolean done
     ) {
         if (title != null) {
             this.title = title;
@@ -72,11 +73,10 @@ public class TodoTask {
             this.dueDate = dueDate;
         }
 
-        this.updatedAt = LocalDateTime.now();
-    }
+        if (done != null) {
+            this.done = done;
+        }
 
-    public void markDone() {
-        this.done = true;
         this.updatedAt = LocalDateTime.now();
     }
 

@@ -13,6 +13,7 @@ public record UpdateTodoTaskRequest(
     TodoPriority priority,
 
     @FutureOrPresent(message = "Due date cannot be in the past")
-    LocalDateTime dueDate
-) {
-}
+    LocalDateTime dueDate,
+
+    Boolean done
+) { }
