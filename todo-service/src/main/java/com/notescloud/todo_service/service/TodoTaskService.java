@@ -53,18 +53,13 @@ public class TodoTaskService {
         task.update(
             request.title(),
             request.priority(),
-            request.dueDate()
+            request.dueDate(),
+            request.done()
         );
 
         TodoTask savedTask = todoTaskRepository.save(task);
 
         return TodoTaskResponse.from(savedTask);
-    }
-
-    public void markDone(UUID userId, UUID taskId) {
-        TodoTask task = getTaskForUser(userId, taskId);
-        task.markDone();
-        todoTaskRepository.save(task);
     }
 
     public TodoTaskResponse getTodoTask(UUID userId, UUID taskId) {

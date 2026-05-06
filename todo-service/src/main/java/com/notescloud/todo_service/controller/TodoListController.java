@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/users/{userId}/todo-lists")
+@RequestMapping("/api/v1/users/{userId}/todo-lists")
 public class TodoListController {
 
     private final TodoListService todoListService;
