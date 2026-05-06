@@ -26,45 +26,52 @@ public class TodoListService {
         this.todoTaskRepository = todoTaskRepository;
     }
 
-    public TodoListResponse createTodoList(CreateTodoListRequest request) {
-        TodoList todoList = new TodoList(request.userId(), request.title());
-        todoListRepository.save(todoList);
-        return TodoListResponse.from(todoList);
+    public TodoListResponse createTodoList(UUID userId, CreateTodoListRequest request) {
+        TodoList todoList = new TodoList(userId, request.title());
+        TodoList savedList = todoListRepository.save(todoList);
+        return TodoListResponse.from(savedList);
     }
 
     @Transactional
-    public void deleteTodoList(UUID id) {
-        if (!todoListRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Todo list not found with id: " + id);
-        }
-        todoTaskRepository.detachAllByListId(id);
-        todoListRepository.deleteById(id);
+    public void deleteTodoList(UUID userId, UUID listId) {
+        TodoList list = getListForUser(userId, listId);
+
+        todoTaskRepository.detachAllByListId(list.id());
+        todoListRepository.delete(list);
     }
 
-    public TodoListResponse updateTodoList(UUID id, UpdateTodoListRequest request) {
-        TodoList todoList = todoListRepository.findById(id).orElseThrow(()
-            -> new ResourceNotFoundException("Todo list not found with id: " + id));
+    public TodoListResponse updateTodoList(UUID userId, UUID listId, UpdateTodoListRequest request) {
+        TodoList todoList = getListForUser(userId, listId);
         todoList.updateTitle(request.title());
-        TodoList saved = todoListRepository.save(todoList);
-        return TodoListResponse.from(saved);
+        TodoList savedList = todoListRepository.save(todoList);
+        return TodoListResponse.from(savedList);
     }
 
-    public TodoListWithTasksResponse getTodoList(UUID id) {
-        TodoList list = todoListRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Todo list not found with id: " + id));
+    public TodoListWithTasksResponse getTodoList(UUID userId, UUID listId) {
+        TodoList list = getListForUser(userId, listId);
+
         List<TodoTask> tasks = todoTaskRepository.findAllByListIdAndDoneFalse(list.id());
+
         return TodoListWithTasksResponse.from(list, tasks);
     }
 
     public List<TodoListWithTasksResponse> getTodoListsWithTasks(UUID userId) {
         List<TodoList> lists = todoListRepository.findAllByUserId(userId);
         List<TodoTask> tasks = todoTaskRepository.findAllByUserIdAndDoneFalseAndListIdNotNull(userId);
+
         return lists.stream()
             .map(list -> {
                 List<TodoTask> listTasks = tasks.stream()
-                    .filter(task -> task.listId().equals(list.id()))
+                    .filter(task -> list.id().equals(task.listId()))
                     .toList();
+
                 return TodoListWithTasksResponse.from(list, listTasks);
-            }).toList();
+            })
+            .toList();
+    }
+
+    private TodoList getListForUser(UUID userId, UUID listId) {
+        return todoListRepository.findByIdAndUserId(listId, userId)
+            .orElseThrow(() -> new ResourceNotFoundException("Todo list not found with id: " + listId));
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface TodoTaskRepository extends JpaRepository<TodoTask, UUID> {
@@ -14,6 +15,8 @@ public interface TodoTaskRepository extends JpaRepository<TodoTask, UUID> {
     List<TodoTask> findAllByUserIdAndDoneFalseAndListIdNotNull(UUID userId);
 
     List<TodoTask> findAllByUserIdAndDoneFalseAndListIdIsNull(UUID userId);
+
+    Optional<TodoTask> findByIdAndUserId(UUID taskId, UUID userId);
 
     @Modifying
     @Query("update TodoTask task set task.listId = null where task.listId = :listId")
