@@ -65,6 +65,34 @@ class TodoTaskServiceTest {
         assertThat(savedTask.priority()).isEqualTo(TodoPriority.HIGH);
         assertThat(savedTask.dueDate()).isEqualTo(dueDate);
         assertThat(savedTask.done()).isFalse();
+
+        verify(todoListRepository, never()).existsByIdAndUserId(any(), any());
+    }
+
+    @Test
+    void createTodoTask_withoutPriority_usesDefaultPriority() {
+        UUID userId = UUID.randomUUID();
+
+        CreateTodoTaskRequest request = new CreateTodoTaskRequest(
+            null,
+            "Task without priority",
+            null,
+            null
+        );
+
+        when(todoTaskRepository.save(any(TodoTask.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+
+        todoTaskService.createTodoTask(userId, request);
+
+        ArgumentCaptor<TodoTask> captor = ArgumentCaptor.forClass(TodoTask.class);
+        verify(todoTaskRepository).save(captor.capture());
+
+        TodoTask savedTask = captor.getValue();
+
+        assertThat(savedTask.priority()).isEqualTo(TodoPriority.MEDIUM);
+        assertThat(savedTask.title()).isEqualTo("Task without priority");
+        assertThat(savedTask.listId()).isNull();
     }
 
     @Test
@@ -79,7 +107,7 @@ class TodoTaskServiceTest {
             LocalDateTime.now().plusDays(1)
         );
 
-        when(todoListRepository.existsById(listId)).thenReturn(true);
+        when(todoListRepository.existsByIdAndUserId(listId, userId)).thenReturn(true);
         when(todoTaskRepository.save(any(TodoTask.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -108,7 +136,7 @@ class TodoTaskServiceTest {
             LocalDateTime.now().plusDays(1)
         );
 
-        when(todoListRepository.existsById(listId)).thenReturn(false);
+        when(todoListRepository.existsByIdAndUserId(listId, userId)).thenReturn(false);
 
         assertThatThrownBy(() -> todoTaskService.createTodoTask(userId, request))
             .isInstanceOf(ResourceNotFoundException.class)
@@ -143,7 +171,7 @@ class TodoTaskServiceTest {
         when(todoTaskRepository.save(task))
             .thenReturn(task);
 
-        var response = todoTaskService.updateTodoTask(userId, taskId, request);
+        TodoTaskResponse response = todoTaskService.updateTodoTask(userId, taskId, request);
 
         assertThat(response.title()).isEqualTo("New title");
         assertThat(response.priority()).isEqualTo(TodoPriority.HIGH);
@@ -187,7 +215,7 @@ class TodoTaskServiceTest {
         when(todoTaskRepository.findByIdAndUserId(taskId, userId))
             .thenReturn(Optional.of(task));
 
-        var response = todoTaskService.getTodoTask(userId, taskId);
+        TodoTaskResponse response = todoTaskService.getTodoTask(userId, taskId);
 
         assertThat(response.title()).isEqualTo("Task");
         assertThat(response.userId()).isEqualTo(userId);
@@ -215,16 +243,14 @@ class TodoTaskServiceTest {
     }
 
     @Test
-    void deleteTodoTask_whenTaskDoesNotBelongToUser_throwsNotFound() {
+    void deleteTodoTask_whenTaskDoesNotBelongToUser_doesNothing() {
         UUID userId = UUID.randomUUID();
         UUID taskId = UUID.randomUUID();
 
         when(todoTaskRepository.findByIdAndUserId(taskId, userId))
             .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> todoTaskService.deleteTodoTask(userId, taskId))
-            .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessageContaining("Todo task not found with id");
+        todoTaskService.deleteTodoTask(userId, taskId);
 
         verify(todoTaskRepository, never()).delete(any());
     }

@@ -47,8 +47,8 @@ public class TodoTaskService {
 
     @Transactional
     public void deleteTodoTask(UUID userId, UUID taskId) {
-        TodoTask task = getTaskForUser(userId, taskId);
-        todoTaskRepository.delete(task);
+        todoTaskRepository.findByIdAndUserId(taskId, userId)
+            .ifPresent(todoTaskRepository::delete);
     }
 
     @Transactional

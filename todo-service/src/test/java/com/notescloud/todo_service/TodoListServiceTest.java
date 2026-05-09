@@ -160,22 +160,6 @@ class TodoListServiceTest {
     }
 
     @Test
-    void deleteTodoList_whenListDoesNotBelongToUser_throwsNotFound() {
-        UUID userId = UUID.randomUUID();
-        UUID listId = UUID.randomUUID();
-
-        when(todoListRepository.findByIdAndUserId(listId, userId))
-            .thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> todoListService.deleteTodoList(userId, listId))
-            .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessageContaining("Todo list not found with id");
-
-        verify(todoTaskRepository, never()).detachAllByListId(any());
-        verify(todoListRepository, never()).delete(any());
-    }
-
-    @Test
     void getTodoListsWithTasks_returnsListsWithTheirTasks() {
         UUID userId = UUID.randomUUID();
         UUID firstListId = UUID.randomUUID();
