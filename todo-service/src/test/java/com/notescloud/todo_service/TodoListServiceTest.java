@@ -155,7 +155,7 @@ class TodoListServiceTest {
 
         todoListService.deleteTodoList(userId, listId);
 
-        verify(todoTaskRepository).detachAllByListId(list.id());
+        verify(todoTaskRepository).detachAllByListIdAndUserId(userId, list.id());
         verify(todoListRepository).delete(list);
     }
 
