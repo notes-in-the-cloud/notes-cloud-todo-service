@@ -8,6 +8,7 @@ import com.notescloud.todo_service.exception.ResourceNotFoundException;
 import com.notescloud.todo_service.repository.TodoListRepository;
 import com.notescloud.todo_service.repository.TodoTaskRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +25,7 @@ public class TodoTaskService {
         this.todoListRepository = todoListRepository;
     }
 
+    @Transactional
     public TodoTaskResponse createTodoTask(UUID userId, CreateTodoTaskRequest request) {
         if (request.listId() != null && !todoListRepository.existsById(request.listId())) {
             throw new ResourceNotFoundException("Todo list not found with id: " + request.listId());
@@ -42,11 +44,13 @@ public class TodoTaskService {
         return TodoTaskResponse.from(savedTask);
     }
 
+    @Transactional
     public void deleteTodoTask(UUID userId, UUID taskId) {
         TodoTask task = getTaskForUser(userId, taskId);
         todoTaskRepository.delete(task);
     }
 
+    @Transactional
     public TodoTaskResponse updateTodoTask(UUID userId, UUID taskId, UpdateTodoTaskRequest request) {
         TodoTask task = getTaskForUser(userId, taskId);
 
@@ -62,10 +66,12 @@ public class TodoTaskService {
         return TodoTaskResponse.from(savedTask);
     }
 
+    @Transactional(readOnly = true)
     public TodoTaskResponse getTodoTask(UUID userId, UUID taskId) {
         return TodoTaskResponse.from(getTaskForUser(userId, taskId));
     }
 
+    @Transactional(readOnly = true)
     public List<TodoTaskResponse> getStandaloneTasks(UUID userId) {
         LocalDateTime now = LocalDateTime.now();
 
