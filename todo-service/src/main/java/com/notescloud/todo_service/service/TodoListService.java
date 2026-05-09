@@ -9,8 +9,8 @@ import com.notescloud.todo_service.dto.UpdateTodoListRequest;
 import com.notescloud.todo_service.exception.ResourceNotFoundException;
 import com.notescloud.todo_service.repository.TodoListRepository;
 import com.notescloud.todo_service.repository.TodoTaskRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,9 +26,11 @@ public class TodoListService {
         this.todoTaskRepository = todoTaskRepository;
     }
 
+    @Transactional
     public TodoListResponse createTodoList(UUID userId, CreateTodoListRequest request) {
         TodoList todoList = new TodoList(userId, request.title());
         TodoList savedList = todoListRepository.save(todoList);
+
         return TodoListResponse.from(savedList);
     }
 
@@ -40,13 +42,18 @@ public class TodoListService {
         todoListRepository.delete(list);
     }
 
+    @Transactional
     public TodoListResponse updateTodoList(UUID userId, UUID listId, UpdateTodoListRequest request) {
         TodoList todoList = getListForUser(userId, listId);
+
         todoList.updateTitle(request.title());
+
         TodoList savedList = todoListRepository.save(todoList);
+
         return TodoListResponse.from(savedList);
     }
 
+    @Transactional(readOnly = true)
     public TodoListWithTasksResponse getTodoList(UUID userId, UUID listId) {
         TodoList list = getListForUser(userId, listId);
 
@@ -55,6 +62,7 @@ public class TodoListService {
         return TodoListWithTasksResponse.from(list, tasks);
     }
 
+    @Transactional(readOnly = true)
     public List<TodoListWithTasksResponse> getTodoListsWithTasks(UUID userId) {
         List<TodoList> lists = todoListRepository.findAllByUserId(userId);
         List<TodoTask> tasks = todoTaskRepository.findAllByUserIdAndDoneFalseAndListIdNotNull(userId);
