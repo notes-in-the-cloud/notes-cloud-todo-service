@@ -38,7 +38,7 @@ public class TodoListService {
     public void deleteTodoList(UUID userId, UUID listId) {
         todoListRepository.findByIdAndUserId(listId, userId)
             .ifPresent(list -> {
-                todoTaskRepository.detachAllByListId(list.id());
+                todoTaskRepository.detachAllByListIdAndUserId(userId, list.id());
                 todoListRepository.delete(list);
             });
     }

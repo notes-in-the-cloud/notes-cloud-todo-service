@@ -18,7 +18,12 @@ public interface TodoTaskRepository extends JpaRepository<TodoTask, UUID> {
 
     Optional<TodoTask> findByIdAndUserId(UUID taskId, UUID userId);
 
-    @Modifying
-    @Query("update TodoTask task set task.listId = null where task.listId = :listId")
-    void detachAllByListId(UUID listId);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        update TodoTask task
+        set task.listId = null
+        where task.listId = :listId
+          and task.userId = :userId
+    """)
+    void detachAllByListIdAndUserId(UUID listId, UUID userId);
 }
