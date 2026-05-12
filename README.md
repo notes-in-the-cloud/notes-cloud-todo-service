@@ -12,6 +12,7 @@ The service supports:
 - Returning standalone active tasks
 - PostgreSQL persistence
 - Kubernetes deployment support
+- Custom health and readiness checks
 - Health checks through Spring Boot Actuator
 
 ## Tech Stack
@@ -26,17 +27,39 @@ The service supports:
 - Kubernetes
 - Maven
 
+## API Base URL
+
+Through Gateway / local cluster access:
+
+```text
+http://localhost:8090/api/v1
+```
+
+Direct Todo Service local/dev access:
+
+```text
+http://localhost:8085
+```
+
+Inside Kubernetes:
+
+```text
+http://todo-service:8085
+```
+
 ## Environment Variables
 
 When running inside Kubernetes, the service expects these environment variables:
 
 ```text
 SERVER_PORT=8085
+
 DB_HOST=postgres
 DB_PORT=5432
 POSTGRES_DB=notes_cloud
-POSTGRES_USER=notes_cloud_user
-POSTGRES_PASSWORD=notes_cloud_password
+DB_USER=notes_cloud_user
+DB_PASSWORD=notes_cloud_password
+
 SPRING_JPA_HIBERNATE_DDL_AUTO=validate
 ```
 
@@ -46,8 +69,28 @@ For local development through database port-forwarding:
 DB_HOST=localhost
 DB_PORT=15432
 POSTGRES_DB=notes_cloud
-POSTGRES_USER=notes_cloud_user
-POSTGRES_PASSWORD=notes_cloud_password
+DB_USER=notes_cloud_user
+DB_PASSWORD=notes_cloud_password
+```
+
+## application.properties Example
+
+```properties
+spring.application.name=todo-service
+server.port=${SERVER_PORT:8085}
+
+spring.datasource.url=jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:15432}/${POSTGRES_DB:notes_cloud}
+spring.datasource.username=${DB_USER:notes_cloud_user}
+spring.datasource.password=${DB_PASSWORD:notes_cloud_password}
+
+spring.jpa.hibernate.ddl-auto=${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
+spring.jpa.show-sql=${SPRING_JPA_SHOW_SQL:true}
+spring.jpa.properties.hibernate.format_sql=${SPRING_JPA_FORMAT_SQL:true}
+
+management.endpoints.web.exposure.include=health,info
+management.endpoint.health.probes.enabled=true
+management.health.readinessstate.enabled=true
+management.health.livenessstate.enabled=true
 ```
 
 ## Running Locally
@@ -78,24 +121,37 @@ The port-forward command must stay running while the local application accesses 
 
 ## Health Checks
 
+Custom endpoints:
+
+```http
+GET /healthz
+GET /readyz
+```
+
+Actuator endpoints:
+
 ```http
 GET /actuator/health
 GET /actuator/health/liveness
 GET /actuator/health/readiness
 ```
 
-Examples:
+Examples through direct service access:
 
 ```bash
+curl http://localhost:8085/healthz
+curl http://localhost:8085/readyz
 curl http://localhost:8085/actuator/health
 curl http://localhost:8085/actuator/health/liveness
 curl http://localhost:8085/actuator/health/readiness
 ```
 
-## API Base URL
+`/healthz` checks whether the application is running.
 
-```text
-http://localhost:8085
+`/readyz` checks whether the application is ready and can connect to PostgreSQL, usually by running a simple database query such as:
+
+```sql
+SELECT 1
 ```
 
 ## API Version
@@ -131,7 +187,17 @@ Request body:
 }
 ```
 
-Example:
+Through Gateway example:
+
+```bash
+curl -X POST http://localhost:8090/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-lists \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Web Project Tasks"
+  }'
+```
+
+Direct service example:
 
 ```bash
 curl -X POST http://localhost:8085/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-lists \
@@ -167,7 +233,13 @@ Returns all todo lists owned by the user, together with their active tasks.
 GET /api/v1/users/{userId}/todo-lists
 ```
 
-Example:
+Through Gateway example:
+
+```bash
+curl http://localhost:8090/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-lists
+```
+
+Direct service example:
 
 ```bash
 curl http://localhost:8085/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-lists
@@ -208,7 +280,7 @@ GET /api/v1/users/{userId}/todo-lists/{listId}
 Example:
 
 ```bash
-curl http://localhost:8085/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-lists/b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33
+curl http://localhost:8090/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-lists/b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33
 ```
 
 ### Update todo list
@@ -228,7 +300,7 @@ Request body:
 Example:
 
 ```bash
-curl -X PUT http://localhost:8085/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-lists/b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33 \
+curl -X PUT http://localhost:8090/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-lists/b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33 \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Updated Web Project Tasks"
@@ -244,7 +316,7 @@ DELETE /api/v1/users/{userId}/todo-lists/{listId}
 Example:
 
 ```bash
-curl -X DELETE http://localhost:8085/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-lists/b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33
+curl -X DELETE http://localhost:8090/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-lists/b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33
 ```
 
 Expected response:
@@ -278,7 +350,7 @@ Request body:
 Example:
 
 ```bash
-curl -X POST http://localhost:8085/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks \
+curl -X POST http://localhost:8090/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Finish todo-service CRUD",
@@ -329,7 +401,7 @@ Request body:
 Example:
 
 ```bash
-curl -X POST http://localhost:8085/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks \
+curl -X POST http://localhost:8090/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks \
   -H "Content-Type: application/json" \
   -d '{
     "listId": "b74f4f78-2eb5-4ef4-9c35-7e08c21a9d33",
@@ -350,7 +422,7 @@ GET /api/v1/users/{userId}/todo-tasks
 Example:
 
 ```bash
-curl http://localhost:8085/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks
+curl http://localhost:8090/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks
 ```
 
 Example response:
@@ -380,7 +452,7 @@ GET /api/v1/users/{userId}/todo-tasks/{taskId}
 Example:
 
 ```bash
-curl http://localhost:8085/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5
+curl http://localhost:8090/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5
 ```
 
 ### Update todo task
@@ -405,7 +477,7 @@ Request body:
 Example:
 
 ```bash
-curl -X PUT http://localhost:8085/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5 \
+curl -X PUT http://localhost:8090/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5 \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Updated task name",
@@ -440,7 +512,7 @@ DELETE /api/v1/users/{userId}/todo-tasks/{taskId}
 Example:
 
 ```bash
-curl -X DELETE http://localhost:8085/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5
+curl -X DELETE http://localhost:8090/api/v1/users/8f3a0f2d-5d3a-4e9a-bfa1-6a1b2c3d4e5f/todo-tasks/38d3719a-8b97-4460-9ee9-e96c6112d5a5
 ```
 
 Expected response:
@@ -551,9 +623,12 @@ linux/arm64
 
 The service is deployed in the `notes-cloud` namespace.
 
-Apply the deployment:
+Apply ConfigMap, Secret, Service and Deployment manifests:
 
 ```bash
+kubectl apply -f todo-service-config-map.yaml
+kubectl apply -f todo-service-secret.yaml
+kubectl apply -f todo-service-cluster-ip.yaml
 kubectl apply -f todo-service-deployment.yaml
 ```
 
@@ -581,7 +656,7 @@ Check logs:
 kubectl logs -n notes-cloud deployment/todo-service
 ```
 
-Port-forward the service:
+Port-forward the service for direct testing:
 
 ```bash
 kubectl port-forward -n notes-cloud svc/todo-service 8085:8085
@@ -613,8 +688,8 @@ The Deployment should provide these environment variables:
 DB_HOST=postgres
 DB_PORT=5432
 POSTGRES_DB=notes_cloud
-POSTGRES_USER=notes_cloud_user
-POSTGRES_PASSWORD=notes_cloud_password
+DB_USER=notes_cloud_user
+DB_PASSWORD=notes_cloud_password
 ```
 
 ## Database Connection Locally
@@ -645,3 +720,7 @@ Password: notes_cloud_password
 - Updating `done` to `true` marks the task as completed.
 - Deleting a task removes it from the database.
 - Deleting a todo list detaches its tasks and makes them standalone.
+- Todo API requests should usually go through the gateway at `http://localhost:8090/api/v1`.
+- `http://todo-service:8085` works only inside Kubernetes-to-Kubernetes communication.
+- For browser or Postman testing from your machine, use `http://localhost:8090/api/v1` through the gateway or `http://localhost:8085` with port-forwarding.
+- Use `DB_USER` and `DB_PASSWORD`, not `POSTGRES_USER` and `POSTGRES_PASSWORD`, because the Kubernetes manifests provide `DB_USER` and `DB_PASSWORD`.
